@@ -3,6 +3,11 @@ import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import { createClient } from "@supabase/supabase-js"
 
+declare global {
+  var mockPurchases: any[] | undefined
+}
+
+
 // Initialize Supabase Storage Client securely
 const supabaseUrl = process.env.SUPABASE_URL || ""
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
@@ -57,11 +62,16 @@ export async function GET(request: Request, { params }: RouteParams) {
     } catch (e) {
       // In-memory mock mapping for simulation checks
       console.warn("⚠️ Database unavailable. Simulating secure download verification.")
-      const { MOCK_PRODUCTS } = require("@/lib/mockData")
-      purchase = {
+      const mockList = globalThis.mockPurchases || []
+      const foundMock = mockList.find((p: any) => p.id === purchaseId && p.buyerId === session.user.id)
+      
+      purchase = foundMock || {
         buyerId: session.user.id,
         refunded: false,
-        product: MOCK_PRODUCTS[0], // fallback sample
+        product: {
+          assetKey: "prompts/dnd-dm.txt",
+          title: "Mock Product",
+        }
       }
     }
 

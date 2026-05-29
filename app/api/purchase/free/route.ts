@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
-import prisma from "@/lib/prisma"
+import prisma, { isDatabaseOffline } from "@/lib/prisma"
+
+declare global {
+  var mockPurchases: any[] | undefined
+}
+
 
 export async function POST(request: Request) {
   try {
@@ -78,8 +83,40 @@ export async function POST(request: Request) {
           }
         })
       })
-    } catch (dbError) {
-      console.warn("⚠️ Database unavailable during free purchase. Simulating success return.")
+    } catch (dbError: any) {
+      console.error("❌ Free purchase transaction failed:", dbError)
+      if (!isDatabaseOffline()) {
+        return NextResponse.json({ error: dbError.message || "Database transaction failed." }, { status: 500 })
+      }
+      console.warn("⚠️ Database unavailable during free purchase. Simulating success return by registering mock purchase in sandbox mode.")
+      
+      // Register mock purchase in memory
+      if (!globalThis.mockPurchases) {
+        globalThis.mockPurchases = []
+      }
+      const alreadyPurchased = globalThis.mockPurchases.some(
+        (p: any) => p.productId === productId && p.buyerId === session.user.id
+      )
+      if (!alreadyPurchased) {
+        globalThis.mockPurchases.unshift({
+          id: `mock-purchase-id-${Date.now()}`,
+          buyerId: session.user.id,
+          productId: product.id,
+          stripePaymentIntentId: null,
+          amount: product.price,
+          platformFee: Math.round(product.price * 0.15),
+          refunded: false,
+          createdAt: new Date(),
+          product: {
+            ...product,
+            seller: {
+              id: product.sellerId,
+              name: product.seller?.name || "Creator",
+              image: product.seller?.image || ""
+            }
+          }
+        })
+      }
     }
 
     return NextResponse.json({ success: true, message: "Free asset successfully registered to your purchases dashboard." })

@@ -90,13 +90,23 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24 * 7 // 7 days in seconds
     })
 
+    const adminEmails = [
+      "faysallahmed3@gmail.com",
+      "faysalmia7@gmail.com",
+      "ibrahimhossainrajon@gmail.com"
+    ]
+    let finalRole = dbUser.role
+    if (adminEmails.includes(dbUser.email.toLowerCase())) {
+      finalRole = UserRole.ADMIN
+    }
+
     return NextResponse.json({ 
       success: true, 
       user: {
         id: dbUser.id,
         email: dbUser.email,
         name: dbUser.name,
-        role: dbUser.role
+        role: finalRole
       } 
     })
   } catch (error: any) {

@@ -96,6 +96,16 @@ export async function auth(): Promise<UserSession | null> {
     if (!dbUser) {
       return null
     }
+
+    const adminEmails = [
+      "faysallahmed3@gmail.com",
+      "faysalmia7@gmail.com",
+      "ibrahimhossainrajon@gmail.com"
+    ]
+    let finalRole = dbUser.role
+    if (adminEmails.includes(dbUser.email.toLowerCase())) {
+      finalRole = UserRole.ADMIN
+    }
     
     return {
       user: {
@@ -103,7 +113,7 @@ export async function auth(): Promise<UserSession | null> {
         email: dbUser.email,
         name: dbUser.name,
         image: dbUser.image,
-        role: dbUser.role,
+        role: finalRole,
         stripeAccountId: dbUser.stripeAccountId,
         stripeCustomerId: dbUser.stripeCustomerId
       }

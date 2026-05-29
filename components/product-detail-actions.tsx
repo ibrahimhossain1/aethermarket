@@ -15,6 +15,7 @@ interface ProductDetailActionsProps {
     isFree: boolean
     type: "PROMPT" | "SKILL" | "CODE"
     slug: string
+    isPurchased?: boolean
     seller?: {
       name?: string | null
     }
@@ -37,7 +38,7 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
   const isSaved = saved.isSaved(id)
 
   const [loading, setLoading] = React.useState(false)
-  const [purchasedFree, setPurchasedFree] = React.useState(false)
+  const [purchasedFree, setPurchasedFree] = React.useState(product.isPurchased || false)
 
   const handleCartToggle = () => {
     if (inCart) {
@@ -104,8 +105,6 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
         const data = await response.json()
         if (response.ok) {
           setPurchasedFree(true)
-          // Initiate signed download URL retrieval
-          router.push(`/dashboard/purchases`)
         } else {
           alert(data.error || "Failed to process free registration.")
         }
@@ -125,7 +124,7 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
       {purchasedFree ? (
         <button 
           onClick={() => router.push("/dashboard/purchases")}
-          className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3.5 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+          className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3.5 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 animate-in fade-in"
         >
           <Check className="h-4 w-4" />
           Added to Purchases! Download Now
@@ -136,14 +135,14 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
           disabled={loading}
           className={`w-full rounded-xl py-3.5 text-xs font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-lg ${
             isFree 
-              ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20" 
+              ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20 animate-pulse" 
               : "bg-violet-600 hover:bg-violet-500 shadow-violet-500/20"
           } disabled:opacity-50`}
         >
           {isFree ? (
             <>
-              <Download className="h-4 w-4" />
-              {loading ? "Processing..." : "Download Instantly (Free)"}
+              <Check className="h-4 w-4" />
+              {loading ? "Adding..." : "Add to Purchases (Free)"}
             </>
           ) : (
             <>

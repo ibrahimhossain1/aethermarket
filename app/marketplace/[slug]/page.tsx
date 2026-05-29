@@ -2,6 +2,11 @@ import * as React from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getProductBySlug, getRelatedProducts } from "@/lib/data"
+
+declare global {
+  var mockPurchases: any[] | undefined
+}
+
 import ProductCard from "@/components/product-card"
 import ProductDetailActions from "@/components/product-detail-actions"
 import ReviewForm from "@/components/review-form"
@@ -45,9 +50,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     ? product.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviewsCount 
     : 0
 
-  // 4. Check review submission eligibility
+  // 4. Check review submission eligibility and purchase status
   const session = await auth()
   let eligibleToReview = false
+  let isPurchased = false
 
   if (session?.user) {
     try {
@@ -60,6 +66,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       })
       
       if (purchase) {
+        isPurchased = true
         const review = await prisma.review.findFirst({
           where: {
             buyerId: session.user.id,
@@ -69,9 +76,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         eligibleToReview = !review
       }
     } catch (e) {
-      console.warn("⚠️ Review eligibility check failed. Mocking user as eligible in sandbox.")
-      // In mock/sandbox mode, if signed in, we can let them submit
-      eligibleToReview = true
+      console.warn("⚠️ Review eligibility check failed. Checking sandbox mock purchases.")
+      const mockList = globalThis.mockPurchases || []
+      isPurchased = mockList.some((p: any) => p.productId === product.id && p.buyerId === session.user.id)
+      eligibleToReview = isPurchased
     }
   }
 
@@ -384,7 +392,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </div>
 
             {/* Interactive buttons */}
-            <ProductDetailActions product={product} />
+            <ProductDetailActions product={{ ...product, isPurchased }} />
 
           </div>
 

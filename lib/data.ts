@@ -374,31 +374,6 @@ export async function getBuyerPurchases(buyerId: string): Promise<any[]> {
     }
     
     const userMockPurchases = globalThis.mockPurchases.filter((p: any) => p.buyerId === buyerId)
-    
-    if (userMockPurchases.length === 0) {
-      // Seed with initial high-fidelity purchases
-      const initialPurchases = MOCK_PRODUCTS.slice(0, 3).map((product, idx) => ({
-        id: `mock-purchase-id-${idx + 1}`,
-        buyerId,
-        productId: product.id,
-        stripePaymentIntentId: null,
-        amount: product.price,
-        platformFee: Math.round(product.price * 0.15),
-        refunded: false,
-        createdAt: new Date(Date.now() - 3600000 * 24 * (idx + 1)), // 1-3 days ago
-        product: {
-          ...product,
-          seller: {
-            id: product.sellerId,
-            name: product.seller.name || "Creator",
-            image: product.seller.image || ""
-          }
-        }
-      }))
-      globalThis.mockPurchases.push(...initialPurchases)
-      return initialPurchases
-    }
-    
     return userMockPurchases
   }
 }

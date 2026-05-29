@@ -12,6 +12,12 @@ export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, totalPrice } = useCart()
   const [loading, setLoading] = React.useState(false)
 
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Close drawer on Escape keypress
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -21,7 +27,7 @@ export default function CartDrawer() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [closeCart])
 
-  if (!isOpen) return null
+  if (!mounted || !isOpen) return null
 
   const handleCheckout = async () => {
     if (!session) {

@@ -30,10 +30,16 @@ export default function Navbar() {
   const cartItems = useCart((state) => state.items)
   const savedItems = useSaved((state) => state.items)
   
+  const openCart = useCart((state) => state.openCart)
+  const [mounted, setMounted] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = React.useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Sync state search query with URL params
   React.useEffect(() => {
@@ -171,7 +177,7 @@ export default function Navbar() {
             title="Saved Items"
           >
             <Heart className="h-5 w-5" />
-            {savedItems.length > 0 && (
+            {mounted && savedItems.length > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-[10px] font-semibold text-white">
                 {savedItems.length}
               </span>
@@ -180,12 +186,12 @@ export default function Navbar() {
 
           {/* Cart Button */}
           <button 
-            onClick={() => useCart.getState().openCart()}
+            onClick={openCart}
             className="relative p-2 text-zinc-400 transition hover:text-zinc-200 hover:bg-zinc-900/40 rounded-full"
             title="Shopping Cart"
           >
             <ShoppingBag className="h-5 w-5" />
-            {cartItems.length > 0 && (
+            {mounted && cartItems.length > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-[10px] font-semibold text-white animate-pulse">
                 {cartItems.length}
               </span>

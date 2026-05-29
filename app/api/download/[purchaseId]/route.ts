@@ -91,7 +91,9 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     // 3. SECURE SUPABASE SIGNED URL GENERATION
-    if (supabase) {
+    const isMockPurchase = purchaseId.includes("mock") || purchase.id?.includes("mock")
+
+    if (supabase && !isMockPurchase) {
       const bucketName = process.env.SUPABASE_STORAGE_BUCKET || "digital-assets"
       const { data, error } = await supabase.storage
         .from(bucketName)
@@ -106,7 +108,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       return NextResponse.redirect(data.signedUrl)
     } else {
       // 4. OFFLINE DEVELOPER SIMULATION FALLBACK
-      console.warn("⚠️ Supabase credentials not found. Redirecting to mock digital asset.")
+      console.warn("⚠️ Supabase credentials not found or Mock Purchase. Redirecting to mock digital asset.")
       
       // Serve a sample mockup zip file from public nextjs assets or a dummy test link
       const mockZipUrl = "https://raw.githubusercontent.com/nidhinjs/prompt-master/main/README.md" // Safe template file link for simulation downloads

@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import { UserRole } from "@prisma/client"
 
+export const dynamic = "force-dynamic"
+
 // High-fidelity mock users in case the database is offline/unmigrated
 const MOCK_USERS = [
   {

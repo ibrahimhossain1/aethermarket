@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import Stripe from "stripe"
 
+export const dynamic = "force-dynamic"
+
 const stripeKey = process.env.STRIPE_SECRET_KEY || ""
 const stripe = stripeKey ? new Stripe(stripeKey, { apiVersion: "2022-11-15" as any }) : null
 

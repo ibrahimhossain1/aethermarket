@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import prisma, { isDatabaseOffline } from "@/lib/prisma"
 
+export const dynamic = "force-dynamic"
+
 declare global {
   var mockPurchases: any[] | undefined
 }

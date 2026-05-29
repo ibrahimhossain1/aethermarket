@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import { UserRole } from "@prisma/client"
 
+export const dynamic = "force-dynamic"
+
 // High-fidelity mock payouts matching Connect balances
 const MOCK_ADMIN_PAYOUTS = [
   {

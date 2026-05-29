@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 
+export const dynamic = "force-dynamic"
+
 // High-fidelity fallback notifications for sandboxed/offline users
 const MOCK_NOTIFICATIONS = [
   {

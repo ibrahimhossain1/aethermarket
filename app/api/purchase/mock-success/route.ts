@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma"
 import { resend } from "@/lib/resend"
 import PurchaseReceiptEmail from "@/components/emails/purchase-receipt"
 
+export const dynamic = "force-dynamic"
+
 declare global {
   var mockPurchases: any[] | undefined
 }

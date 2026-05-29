@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import Stripe from "stripe"
+
+export const dynamic = "force-dynamic"
 import { getProductBySlug } from "@/lib/data"
 
 // Initialize Stripe (optional fallback)

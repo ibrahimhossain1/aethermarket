@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import { ProductType, ProductStatus, UserRole } from "@prisma/client"
 
+export const dynamic = "force-dynamic"
+
 export async function POST(request: Request) {
   try {
     // 1. Authenticate creator session

@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import prisma from "@/lib/prisma"
 import { UserRole, ProductStatus, ProductType } from "@prisma/client"
 
+export const dynamic = "force-dynamic"
+
 // High-fidelity mock listings for pending moderation queue sandbox
 const MOCK_PENDING_LISTINGS = [
   {

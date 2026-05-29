@@ -69,7 +69,7 @@ export default function PurchasesList({ initialPurchases, isDbOffline }: Purchas
         })
       }
     }
-  }, [mounted, searchParams, session])
+  }, [mounted, searchParams, session, mockStore])
 
   // 2. Select data source: Server-fetched DB items or client-side persisted mock purchases
   const displayPurchases = React.useMemo(() => {

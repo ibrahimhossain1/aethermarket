@@ -60,7 +60,8 @@ export async function POST(request: Request) {
     }
 
     // 3. Normalize values
-    const finalPrice = isFree ? 0 : Math.round(parseFloat(price) * 100)
+    const parsedPrice = parseFloat(price)
+    const finalPrice = isFree ? 0 : (isNaN(parsedPrice) ? 0 : Math.round(parsedPrice * 100))
     const finalTags = Array.isArray(tags) ? tags : tags.split(",").map((t: string) => t.trim()).filter(Boolean)
     const finalImages = Array.isArray(previewImages) ? previewImages : [previewImages].filter(Boolean)
 

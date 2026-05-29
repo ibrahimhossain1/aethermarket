@@ -40,7 +40,7 @@ export default function MarketplaceFilters() {
   // Automatically apply filters when parameters that don't need submit buttons change
   React.useEffect(() => {
     applyFilters()
-  }, [type, category, minRating, isFree, sort])
+  }, [type, category, minRating, isFree, sort, applyFilters])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()

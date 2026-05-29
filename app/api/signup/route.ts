@@ -25,11 +25,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "An account with this email address already exists." }, { status: 400 })
       }
     } catch (dbErr) {
-      console.warn("⚠️ Database connection failed during user check. Simulating registration success in sandbox.")
-      return NextResponse.json({ 
-        success: true, 
-        message: "[MOCK SUCCESS] Registered user in sandbox mode." 
-      })
+      console.error("⚠️ Database connection failed during user check:", dbErr)
+      return NextResponse.json({ error: "Database is currently offline. Unable to complete registration at this time." }, { status: 500 })
     }
 
     // 2. Hash password

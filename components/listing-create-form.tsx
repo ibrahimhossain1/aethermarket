@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase-client"
 import { 
   Plus, 
   HelpCircle, 
@@ -12,7 +13,10 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
-  Lock
+  Lock,
+  Upload,
+  FileCode,
+  Image as ImageIcon
 } from "lucide-react"
 
 export default function ListingCreateForm() {
@@ -45,6 +49,82 @@ export default function ListingCreateForm() {
   const [loading, setLoading] = React.useState(false)
   const [successMsg, setSuccessMsg] = React.useState("")
   const [errorMsg, setErrorMsg] = React.useState("")
+
+  // File upload states
+  const [assetFile, setAssetFile] = React.useState<File | null>(null)
+  const [imageFile, setImageFile] = React.useState<File | null>(null)
+  const [assetUploading, setAssetUploading] = React.useState(false)
+  const [imageUploading, setImageUploading] = React.useState(false)
+  const [assetSuccess, setAssetSuccess] = React.useState(false)
+  const [imageSuccess, setImageSuccess] = React.useState(false)
+
+  const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
+
+    setAssetFile(selectedFile)
+    setAssetUploading(true)
+    setAssetSuccess(false)
+    setErrorMsg("")
+
+    try {
+      const cleanFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")
+      const path = `${type.toLowerCase()}s/${Date.now()}-${cleanFileName}`
+
+      const { data, error } = await supabase.storage
+        .from("digital-assets")
+        .upload(path, selectedFile, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (error) throw error
+
+      setAssetKey(path)
+      setAssetSuccess(true)
+    } catch (err: any) {
+      console.error("❌ Failed to upload asset to Supabase:", err)
+      setErrorMsg(err.message || "Failed to upload secure asset to Supabase storage. Ensure 'digital-assets' bucket exists and RLS allows writes.")
+    } finally {
+      setAssetUploading(false)
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
+
+    setImageFile(selectedFile)
+    setImageUploading(true)
+    setImageSuccess(false)
+    setErrorMsg("")
+
+    try {
+      const cleanFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")
+      const path = `previews/${Date.now()}-${cleanFileName}`
+
+      const { data, error } = await supabase.storage
+        .from("product-previews")
+        .upload(path, selectedFile, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("product-previews")
+        .getPublicUrl(path)
+
+      setPreviewImage(publicUrl)
+      setImageSuccess(true)
+    } catch (err: any) {
+      console.error("❌ Failed to upload preview image:", err)
+      setErrorMsg(err.message || "Failed to upload preview image. Ensure 'product-previews' bucket exists and is public.")
+    } finally {
+      setImageUploading(false)
+    }
+  }
 
   const categories = ["Development", "Marketing", "Automation", "Design Systems", "Entertainment"]
 
@@ -385,32 +465,126 @@ export default function ListingCreateForm() {
         <div className="rounded-2xl border border-zinc-850 p-5 bg-zinc-950/40 flex flex-col gap-4">
           <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 uppercase tracking-widest border-b border-zinc-900 pb-2.5">
             <Lock className="h-4.5 w-4.5 text-violet-400" />
-            Secure Private Storage
+            Secure Private Storage & Assets
           </div>
 
+          {/* Secure File Uploader Card */}
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider">Private Storage Asset Key</label>
-            <input
-              type="text"
-              placeholder="e.g. prompts/multi-agent-orchestration.txt"
-              value={assetKey}
-              onChange={(e) => setAssetKey(e.target.value)}
-              className="w-full rounded-xl bg-zinc-900/60 border border-zinc-850 py-3 px-4 text-xs text-zinc-200 placeholder-zinc-650 outline-none focus:border-violet-600 transition"
-              required
-            />
-            <span className="text-[9px] text-zinc-650 font-light">Input the whitelisted Supabase Storage asset file path. Buyers will download using temporary expiring secure signed URLs pointing to this key.</span>
+            <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider">Upload Product File (.zip, .yaml, .txt, .json)</label>
+            
+            <div className="relative border-2 border-dashed border-zinc-800 hover:border-violet-600/50 rounded-2xl p-6 bg-zinc-900/20 text-center transition flex flex-col items-center justify-center gap-3 cursor-pointer group">
+              <input
+                type="file"
+                onChange={handleAssetUpload}
+                disabled={assetUploading}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                accept=".zip,.rar,.tar,.gz,.json,.txt,.yaml,.yml,.js,.ts,.py"
+              />
+              
+              {assetUploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+                  <span className="text-xs text-zinc-400 font-semibold animate-pulse">Uploading file to Supabase Secure Vault...</span>
+                </div>
+              ) : assetSuccess ? (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="h-10 w-10 bg-emerald-950/60 border border-emerald-800/50 text-emerald-450 flex items-center justify-center rounded-xl">
+                    <FileCode className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-bold text-emerald-400 mt-2">File Uploaded Successfully!</span>
+                  <span className="text-[10px] text-zinc-500 truncate max-w-xs mt-1">{assetFile?.name}</span>
+                  <span className="text-[9px] font-mono text-violet-400/80 bg-violet-950/30 border border-violet-900/30 px-2 py-0.5 rounded mt-2">{assetKey}</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 bg-zinc-950/80 border border-zinc-800 text-zinc-450 flex items-center justify-center rounded-xl group-hover:scale-105 transition">
+                    <Upload className="h-5 w-5 group-hover:text-violet-400" />
+                  </div>
+                  <span className="text-xs font-semibold text-zinc-300 group-hover:text-white transition">Click to select or drag and drop file</span>
+                  <span className="text-[9px] text-zinc-650 font-light">Supported formats: ZIP, JSON, YAML, YML, TXT, PY, JS, TS (Max 50MB)</span>
+                </div>
+              )}
+            </div>
+
+            {/* Read-only manual path backup */}
+            <div className="flex flex-col gap-1.5 mt-2">
+              <label className="text-[9px] uppercase font-bold text-zinc-600 tracking-wider">Or Manual Storage Asset Key (Optional Backup)</label>
+              <input
+                type="text"
+                placeholder="e.g. prompts/multi-agent-orchestration.txt"
+                value={assetKey}
+                onChange={(e) => setAssetKey(e.target.value)}
+                className="w-full rounded-xl bg-zinc-900/60 border border-zinc-855 py-2.5 px-3.5 text-[11px] text-zinc-400 placeholder-zinc-700 outline-none focus:border-violet-600/50 transition font-mono"
+                required
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider">Product Visual Thumbnail URL (Optional)</label>
-            <input
-              type="url"
-              placeholder="e.g. https://images.unsplash.com/photo-..."
-              value={previewImage}
-              onChange={(e) => setPreviewImage(e.target.value)}
-              className="w-full rounded-xl bg-zinc-900/60 border border-zinc-850 py-3 px-4 text-xs text-zinc-200 placeholder-zinc-650 outline-none focus:border-violet-600 transition"
-            />
-            <span className="text-[9px] text-zinc-650 font-light">Input a high-quality visual screenshot URL (like a direct Unsplash link) to act as the primary listing card cover.</span>
+          {/* Visual Preview Image Uploader Card */}
+          <div className="flex flex-col gap-2 border-t border-zinc-900 pt-4">
+            <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider">Product Visual Thumbnail (Image File or URL)</label>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+              {/* Dropzone for Image */}
+              <div className="relative border-2 border-dashed border-zinc-800 hover:border-violet-600/50 rounded-2xl p-5 bg-zinc-900/20 text-center transition flex flex-col items-center justify-center gap-2.5 cursor-pointer group h-[130px]">
+                <input
+                  type="file"
+                  onChange={handleImageUpload}
+                  disabled={imageUploading}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  accept="image/*"
+                />
+                
+                {imageUploading ? (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-violet-500"></div>
+                    <span className="text-[10px] text-zinc-400 font-semibold animate-pulse">Uploading cover...</span>
+                  </div>
+                ) : imageSuccess ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="h-8 w-8 bg-emerald-950/60 border border-emerald-800/50 text-emerald-450 flex items-center justify-center rounded-lg">
+                      <ImageIcon className="h-4 w-4" />
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-400 mt-1">Image Uploaded!</span>
+                    <span className="text-[9px] text-zinc-500 truncate max-w-[150px]">{imageFile?.name}</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <Upload className="h-4.5 w-4.5 text-zinc-500 group-hover:text-violet-400" />
+                    <span className="text-[11px] font-semibold text-zinc-300">Upload Visual Cover</span>
+                    <span className="text-[8px] text-zinc-650">JPG, PNG, WEBP (Max 5MB)</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cover preview or input url */}
+              <div className="flex flex-col gap-2">
+                {previewImage ? (
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden h-[95px] relative group">
+                    <img src={previewImage} alt="Preview Cover" className="w-full h-full object-cover" />
+                    <button 
+                      type="button" 
+                      onClick={() => { setPreviewImage(""); setImageSuccess(false); setImageFile(null); }}
+                      className="absolute top-2 right-2 bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800/60 p-1 text-[9px] font-bold text-rose-500 rounded-lg hover:scale-105 transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/10 flex items-center justify-center text-center text-[10px] text-zinc-655 h-[95px]">
+                    No cover image selected
+                  </div>
+                )}
+
+                <input
+                  type="url"
+                  placeholder="Or input direct visual URL..."
+                  value={previewImage}
+                  onChange={(e) => setPreviewImage(e.target.value)}
+                  className="w-full rounded-xl bg-zinc-900/40 border border-zinc-850 py-2 px-3 text-[10px] text-zinc-300 placeholder-zinc-700 outline-none focus:border-violet-600 transition"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

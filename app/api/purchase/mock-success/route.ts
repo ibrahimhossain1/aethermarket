@@ -27,6 +27,10 @@ export async function GET(request: Request) {
         where: { id: productId }
       })
     } catch (e) {
+      // Ignore DB errors and check in-memory MOCK_PRODUCTS
+    }
+
+    if (!product) {
       const { MOCK_PRODUCTS } = require("@/lib/mockData")
       product = MOCK_PRODUCTS.find((p: any) => p.id === productId)
     }

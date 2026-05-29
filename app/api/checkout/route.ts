@@ -31,7 +31,10 @@ export async function POST(request: Request) {
         include: { seller: true }
       })
     } catch (e) {
-      // Fallback in case of database absence during local checks
+      // Ignore DB errors and check in-memory MOCK_PRODUCTS
+    }
+
+    if (!product) {
       const { MOCK_PRODUCTS } = require("@/lib/mockData")
       product = MOCK_PRODUCTS.find((p: any) => p.id === productId)
     }

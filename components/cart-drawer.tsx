@@ -149,7 +149,7 @@ export default function CartDrawer() {
                           {item.title}
                         </h4>
                         <p className="text-[9px] text-zinc-550 mt-0.5 truncate">
-                          by @{item.sellerName.toLowerCase().replace(" ", "")}
+                          by @{(item.sellerName || "Creator").toLowerCase().replace(" ", "")}
                         </p>
                       </div>
 

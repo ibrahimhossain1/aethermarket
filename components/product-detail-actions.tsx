@@ -15,8 +15,10 @@ interface ProductDetailActionsProps {
     isFree: boolean
     type: "PROMPT" | "SKILL" | "CODE"
     slug: string
-    sellerName: string
-    previewImage?: string
+    seller?: {
+      name?: string | null
+    }
+    previewImages?: string[]
   }
 }
 
@@ -24,7 +26,9 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
   const router = useRouter()
   const { data: session } = useSession()
   
-  const { id, title, price, isFree, type, slug, sellerName, previewImage } = product
+  const { id, title, price, isFree, type, slug } = product
+  const sellerName = product.seller?.name || "Creator"
+  const previewImage = product.previewImages?.[0] || ""
 
   const cart = useCart()
   const saved = useSaved()

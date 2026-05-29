@@ -1,12 +1,13 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dpszeajsjorjsojuscxb.supabase.co"
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "sb_secret_placeholder"
 
-const isPlaceholder = !supabaseUrl || 
-  !supabaseServiceRoleKey || 
-  supabaseServiceRoleKey.includes("supabase_service_role_key_here") ||
-  supabaseServiceRoleKey.includes("sb_secret_placeholder")
+const isPlaceholder = !process.env.SUPABASE_URL && 
+  !process.env.NEXT_PUBLIC_SUPABASE_URL && 
+  (!process.env.SUPABASE_SERVICE_ROLE_KEY || 
+   process.env.SUPABASE_SERVICE_ROLE_KEY.includes("supabase_service_role_key_here") ||
+   process.env.SUPABASE_SERVICE_ROLE_KEY.includes("sb_secret_placeholder"))
 
 if (isPlaceholder) {
   console.warn("⚠️ Supabase admin environment variables are placeholders! Running Aether in Sandbox Verification mode.")

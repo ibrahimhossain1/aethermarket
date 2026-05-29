@@ -1,0 +1,151 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum ProductType {
+  PROMPT
+  SKILL
+  CODE
+}
+
+enum ProductStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  ARCHIVED
+}
+
+model User {
+  id               String         @id @default(uuid())
+  email            String         @unique
+  password         String?        // Made nullable to support social login accounts
+  name             String?
+  image            String?
+  role             UserRole       @default(BUYER)
+  bio              String?        @db.Text
+  website          String?
+  stripeAccountId  String?        @unique // For Stripe Connect payouts
+  stripeCustomerId String?        @unique // For Stripe buyer billing
+  emailVerified    DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  listings      Product[]      @relation("SellerListings")
+  purchases     Purchase[]     @relation("BuyerPurchases")
+  reviews       Review[]       @relation("BuyerReviews")
+  notifications Notification[] @relation("UserNotifications")
+  savedProducts SavedProduct[] @relation("UserSavedProducts")
+
+  @@index([email])
+}
+
+model Product {
+  id             String        @id @default(uuid())
+  slug           String        @unique
+  title          String
+  description    String        @db.Text // TipTap editor rich text (stores as HTML or JSON string)
+  type           ProductType
+  category       String
+  subcategory    String?
+  tags           String[]
+  price          Int           // Price in cents (e.g. $9.99 is 999)
+  isFree         Boolean       @default(false)
+  previewContent String?       @db.Text // Truncated first 20% plain text preview
+  assetKey       String        // Supabase Storage path/key for the downloadable zip/pdf/etc
+  previewImages  String[]      // Arrays of screenshot URLs
+  status         ProductStatus @default(DRAFT)
+  
+  // Type-specific optional fields
+  targetModel    String?       // For prompts (e.g. "GPT-4o", "Claude 3.5 Sonnet", "Gemini Pro")
+  language       String?       // For code (e.g. "TypeScript", "Python", "Go")
+  framework      String?       // For code (e.g. "Next.js", "React Native", "FastAPI")
+  
+  metadata       Json          @default("{}") // Holds other type-specific attributes
+  downloadCount  Int           @default(0)
+  viewCount      Int           @default(0)
+  
+  sellerId       String
+  seller         User          @relation("SellerListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  purchases     Purchase[]
+  reviews       Review[]
+  savedProducts SavedProduct[] @relation("ProductSavedEntries")
+
+  @@index([slug])
+  @@index([sellerId])
+  @@index([type])
+  @@index([status])
+}
+
+model Purchase {
+  id                    String   @id @default(uuid())
+  buyerId               String
+  buyer                 User     @relation("BuyerPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
+  productId             String
+  product               Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stripePaymentIntentId String?  @unique // Nullable for free items purchased in one click
+  amount                Int      // In cents
+  platformFee           Int      // In cents (15% platform cut)
+  refunded              Boolean  @default(false)
+  createdAt             DateTime @default(now())
+
+  @@index([buyerId])
+  @@index([productId])
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  buyerId     String
+  buyer       User     @relation("BuyerReviews", fields: [buyerId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating      Int      // 1 to 5 stars
+  body        String   @db.Text
+  sellerReply String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([buyerId])
+  @@index([productId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // e.g. "SALE", "REVIEW", "PAYOUT", "APPROVAL"
+  message   String
+  read      Boolean  @default(false)
+  link      String?  // Relative link to direct the user (e.g. "/dashboard/purchases")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+}
+
+model SavedProduct {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("UserSavedProducts", fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation("ProductSavedEntries", fields: [productId], references: [id], onDelete: Cascade)
+  savedAt   DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}

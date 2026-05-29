@@ -1,0 +1,17 @@
+packages:
+  - "."
+
+allowBuilds:
+  '0': unrs-resolver
+  '1': prisma
+  '2': '@prisma/engines'
+  '3': '@prisma/client'
+  '4': bcryptjs
+  '5': esbuild
+  '@firebase/util': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  protobufjs: true
+  unrs-resolver: set this to true or false

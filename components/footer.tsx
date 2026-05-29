@@ -87,7 +87,7 @@ export default function Footer() {
                 </span>
               </li>
               <li>
-                <Link href="/marketplace" className="flex items-center gap-1.5 hover:text-zinc-200 transition">
+                <Link href="/help" className="flex items-center gap-1.5 hover:text-zinc-200 transition">
                   <HelpCircle className="h-3.5 w-3.5 text-zinc-500" />
                   Help & FAQs
                 </Link>
@@ -103,8 +103,8 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Aether Inc. All rights reserved. Built for creators, developers, and AI enthusiasts.
           </p>
           <div className="flex items-center gap-6 text-[10px] text-zinc-600">
-            <Link href="/marketplace" className="hover:text-zinc-400 transition">Terms of Service</Link>
-            <Link href="/marketplace" className="hover:text-zinc-400 transition">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-zinc-400 transition">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-zinc-400 transition">Privacy Policy</Link>
           </div>
         </div>
 

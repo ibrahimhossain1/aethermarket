@@ -260,7 +260,7 @@ export default async function Home() {
               Get Started Free
             </Link>
             <Link 
-              href="/marketplace" 
+              href="/help" 
               className="w-full sm:w-auto rounded-full border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800 px-6 py-3 text-xs font-semibold text-zinc-300 hover:text-white transition flex items-center justify-center gap-1.5 whitespace-nowrap"
             >
               Explore Creator Guidelines <ArrowRight className="h-3.5 w-3.5" />

@@ -179,21 +179,18 @@ export default function Navbar() {
           </Link>
 
           {/* Cart Button */}
-          <Link 
-            href="/marketplace" 
+          <button 
+            onClick={() => useCart.getState().openCart()}
             className="relative p-2 text-zinc-400 transition hover:text-zinc-200 hover:bg-zinc-900/40 rounded-full"
             title="Shopping Cart"
-            onClick={(e) => {
-              // Redirect to marketplace or handle instant modal in Phase 3
-            }}
           >
             <ShoppingBag className="h-5 w-5" />
             {cartItems.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-[10px] font-semibold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-[10px] font-semibold text-white animate-pulse">
                 {cartItems.length}
               </span>
             )}
-          </Link>
+          </button>
 
           {/* Notifications Bell Dropdown */}
           <div className="relative">

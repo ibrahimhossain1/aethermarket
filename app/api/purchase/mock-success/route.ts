@@ -3,6 +3,11 @@ import prisma from "@/lib/prisma"
 import { resend } from "@/lib/resend"
 import PurchaseReceiptEmail from "@/components/emails/purchase-receipt"
 
+declare global {
+  var mockPurchases: any[] | undefined
+}
+
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -110,6 +115,34 @@ export async function GET(request: Request) {
         }
       } catch (dbError) {
         console.warn("⚠️ Database unavailable during mock transaction. Mocking redirect behavior anyway.", dbError)
+        
+        // Register mock purchase in memory
+        if (!globalThis.mockPurchases) {
+          globalThis.mockPurchases = []
+        }
+        const alreadyPurchased = globalThis.mockPurchases.some(
+          (p: any) => p.productId === productId && p.buyerId === buyerId
+        )
+        if (!alreadyPurchased) {
+          globalThis.mockPurchases.unshift({
+            id: paymentIntentId,
+            buyerId,
+            productId: product.id,
+            stripePaymentIntentId: paymentIntentId,
+            amount: product.price,
+            platformFee,
+            refunded: false,
+            createdAt: new Date(),
+            product: {
+              ...product,
+              seller: {
+                id: product.sellerId,
+                name: product.seller?.name || "Creator",
+                image: product.seller?.image || ""
+              }
+            }
+          })
+        }
       }
 
     // Redirect to purchases dashboard with success flag

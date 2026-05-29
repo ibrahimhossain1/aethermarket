@@ -3,6 +3,7 @@
 import * as React from "react"
 import { supabase } from "@/lib/supabase-client"
 import { AuthChangeEvent, Session as SupabaseSession } from "@supabase/supabase-js"
+import CartDrawer from "./cart-drawer"
 
 export interface Session {
   user: {
@@ -95,6 +96,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   return (
     <SessionContext.Provider value={{ data: session, status, update }}>
       {children}
+      <CartDrawer />
     </SessionContext.Provider>
   )
 }

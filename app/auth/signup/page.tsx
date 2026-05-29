@@ -3,8 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
-import { auth as firebaseAuth } from "@/lib/firebase-client"
+import { supabase } from "@/lib/supabase-client"
 import { 
   Sparkles, 
   Mail, 
@@ -39,21 +38,39 @@ export default function SignUpPage() {
     setSuccessMessage("")
 
     try {
-      // 1. Create user in Firebase Client
-      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
-      
-      // 2. Set profile displayName
-      await updateProfile(userCredential.user, {
-        displayName: name
+      // 1. Sign up via Supabase Client
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
       })
 
-      const idToken = await userCredential.user.getIdToken()
+      if (error) {
+        throw error
+      }
 
-      // 3. Sync cookie session and create PostgreSQL database entry
+      if (!data.user) {
+        throw new Error("Failed to register account with Supabase.")
+      }
+
+      if (!data.session) {
+        // If email verification is active
+        setSuccessMessage("Registration successful! Please check your email to confirm your account, then sign in.")
+        setTimeout(() => {
+          router.push("/auth/signin?registered=true")
+        }, 3000)
+        return
+      }
+
+      // 2. Sync cookie session and create PostgreSQL database entry
       const response = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({ accessToken: data.session.access_token })
       })
 
       if (response.ok) {
@@ -68,15 +85,7 @@ export default function SignUpPage() {
       }
     } catch (err: any) {
       console.error("Signup request failed:", err)
-      if (err.code === "auth/email-already-in-use") {
-        setErrorMessage("This email address is already in use by another developer account.")
-      } else if (err.code === "auth/weak-password") {
-        setErrorMessage("Password must be at least 6 characters long.")
-      } else if (err.code === "auth/invalid-email") {
-        setErrorMessage("Please enter a valid email address.")
-      } else {
-        setErrorMessage(err.message || "Failed to connect to authentication server. Please try again.")
-      }
+      setErrorMessage(err.message || "Failed to connect to authentication server. Please try again.")
     } finally {
       setLoading(false)
     }

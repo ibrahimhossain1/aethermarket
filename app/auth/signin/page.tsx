@@ -4,8 +4,7 @@ import * as React from "react"
 import { Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth"
-import { auth as firebaseAuth, googleProvider, githubProvider } from "@/lib/firebase-client"
+import { supabase } from "@/lib/supabase-client"
 import { 
   Sparkles, 
   Mail, 
@@ -20,6 +19,7 @@ function SignInForm() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
   const errorParam = searchParams.get("error")
+  const registeredParam = searchParams.get("registered")
 
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
@@ -31,7 +31,10 @@ function SignInForm() {
     if (errorParam) {
       setErrorMessage("An unexpected authentication error occurred.")
     }
-  }, [errorParam])
+    if (registeredParam) {
+      setSuccessMessage("Registration successful! Please check your email for a confirmation link, then sign in.")
+    }
+  }, [errorParam, registeredParam])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,15 +43,25 @@ function SignInForm() {
     setSuccessMessage("")
 
     try {
-      // 1. Log in to Firebase client-side
-      const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password)
-      const idToken = await userCredential.user.getIdToken()
+      // 1. Log in via Supabase client-side
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (!data.session) {
+        throw new Error("Failed to retrieve authentication session.")
+      }
 
       // 2. Establish server cookie session
       const response = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({ accessToken: data.session.access_token })
       })
 
       if (response.ok) {
@@ -63,11 +76,7 @@ function SignInForm() {
       }
     } catch (err: any) {
       console.error("Login submission error:", err)
-      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-        setErrorMessage("Invalid email or password combination. Please try again.")
-      } else {
-        setErrorMessage("Connection timeout. Please verify your credentials and try again.")
-      }
+      setErrorMessage(err.message || "Invalid email or password combination. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -79,33 +88,21 @@ function SignInForm() {
     setSuccessMessage("")
     
     try {
-      const provider = providerName === "google" ? googleProvider : githubProvider
-      // 1. Trigger Firebase Social Popup
-      const userCredential = await signInWithPopup(firebaseAuth, provider)
-      const idToken = await userCredential.user.getIdToken()
-
-      // 2. Sync cookie session
-      const response = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken })
+      const redirectTo = window.location.origin + "/auth/callback"
+      // Trigger Supabase Social Redirect
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: providerName,
+        options: {
+          redirectTo
+        }
       })
 
-      if (response.ok) {
-        setSuccessMessage(`Google login successful! Welcome back...`)
-        setTimeout(() => {
-          router.push(callbackUrl)
-          router.refresh()
-        }, 1000)
-      } else {
-        const errorData = await response.json()
-        setErrorMessage(errorData.error || "Failed to sync OAuth session.")
+      if (error) {
+        throw error
       }
     } catch (err: any) {
       console.error(`OAuth login error for ${providerName}:`, err)
-      if (err.code !== "auth/popup-closed-by-user") {
-        setErrorMessage(`Social login failed. Ensure popups are allowed and try again.`)
-      }
+      setErrorMessage(err.message || `Social login failed. Ensure popups are allowed and try again.`)
       setLoading(false)
     }
   }

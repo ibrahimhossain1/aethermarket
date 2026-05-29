@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { verifyIdToken, createSessionCookie } from "@/lib/firebase-admin"
+import { verifySessionToken } from "@/lib/supabase-admin"
 import { auth } from "@/auth"
 import prisma, { isDatabaseOffline, flagDatabaseOffline } from "@/lib/prisma"
 import { UserRole } from "@prisma/client"
@@ -20,18 +20,18 @@ export async function GET() {
 }
 
 /**
- * POST endpoint to generate an HTTP-Only session cookie from client ID token.
+ * POST endpoint to generate an HTTP-Only session cookie from client access token.
  */
 export async function POST(request: Request) {
   try {
-    const { idToken } = await request.json()
+    const { accessToken } = await request.json()
     
-    if (!idToken) {
-      return NextResponse.json({ error: "Missing ID Token" }, { status: 400 })
+    if (!accessToken) {
+      return NextResponse.json({ error: "Missing Access Token" }, { status: 400 })
     }
 
-    // 1. Verify ID token
-    const decodedClaims = await verifyIdToken(idToken)
+    // 1. Verify Supabase Access Token (JWT)
+    const decodedClaims = await verifySessionToken(accessToken)
     
     if (!decodedClaims.email) {
       return NextResponse.json({ error: "Invalid Token: Missing email payload" }, { status: 400 })
@@ -80,13 +80,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Generate Firebase Session Cookie (expires in 7 days)
-    const expiresIn = 60 * 60 * 24 * 7 * 1000 // 7 days in milliseconds
-    const sessionCookie = await createSessionCookie(idToken, expiresIn)
-
-    // 4. Set secure HttpOnly cookie
+    // 3. Set secure HttpOnly cookie containing the Supabase access token (expires in 7 days)
     const cookieStore = cookies()
-    cookieStore.set("firebase-session", sessionCookie, {
+    cookieStore.set("supabase-session", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -115,7 +111,7 @@ export async function POST(request: Request) {
 export async function DELETE() {
   try {
     const cookieStore = cookies()
-    cookieStore.set("firebase-session", "", {
+    cookieStore.set("supabase-session", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

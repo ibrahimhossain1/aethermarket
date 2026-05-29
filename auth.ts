@@ -1,5 +1,5 @@
 import { cookies } from "next/headers"
-import { verifySessionCookie } from "@/lib/firebase-admin"
+import { verifySessionToken } from "@/lib/supabase-admin"
 import prisma, { isDatabaseOffline, flagDatabaseOffline } from "@/lib/prisma"
 import { UserRole } from "@prisma/client"
 
@@ -17,20 +17,20 @@ export interface UserSession {
 
 /**
  * Server-side session verification.
- * Automatically decodes the secure Firebase session cookie, 
+ * Automatically decodes the secure Supabase session cookie, 
  * queries PostgreSQL via Prisma to fetch latest user data (role, Stripe info), 
  * and returns the session payload matching the original NextAuth structure.
  */
 export async function auth(): Promise<UserSession | null> {
   try {
     const cookieStore = cookies()
-    const sessionCookie = cookieStore.get("firebase-session")?.value
+    const sessionCookie = cookieStore.get("supabase-session")?.value
     
     if (!sessionCookie) {
       return null
     }
     
-    const decodedClaims = await verifySessionCookie(sessionCookie)
+    const decodedClaims = await verifySessionToken(sessionCookie)
     if (!decodedClaims.email) {
       return null
     }
@@ -124,6 +124,6 @@ export async function signOut() {
 }
 
 export const handlers = {
-  GET: async () => new Response("Firebase Session API Active", { status: 200 }),
-  POST: async () => new Response("Firebase Session API Active", { status: 200 })
+  GET: async () => new Response("Supabase Session API Active", { status: 200 }),
+  POST: async () => new Response("Supabase Session API Active", { status: 200 })
 }

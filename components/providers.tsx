@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { onAuthStateChanged } from "firebase/auth"
-import { auth as firebaseAuth } from "@/lib/firebase-client"
+import { supabase } from "@/lib/supabase-client"
+import { AuthChangeEvent, Session as SupabaseSession } from "@supabase/supabase-js"
 
 export interface Session {
   user: {
@@ -52,28 +52,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Sync client session on initial mount and whenever Firebase state changes
+  // Sync client session on initial mount and whenever Supabase state changes
   React.useEffect(() => {
     fetchSession()
 
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
-      if (user) {
-        // Firebase Client logs in, write cookie immediately if it's missing
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, currentSession: SupabaseSession | null) => {
+      if (currentSession) {
+        // Supabase logged in, sync access token with cookie session
         try {
-          const idToken = await user.getIdToken()
           const res = await fetch("/api/auth/session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken })
+            body: JSON.stringify({ accessToken: currentSession.access_token })
           })
           if (res.ok) {
             await fetchSession()
           }
         } catch (error) {
-          console.error("Failed to sync Firebase session with server:", error)
+          console.error("Failed to sync Supabase session with server:", error)
         }
       } else {
-        // Firebase Client logs out, wipe cookie instantly
+        // Supabase logged out, delete cookie
         try {
           await fetch("/api/auth/session", { method: "DELETE" })
         } catch (error) {
@@ -84,7 +83,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    return () => unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [fetchSession])
 
   const update = async () => {
@@ -103,13 +104,12 @@ export function useSession() {
 }
 
 /**
- * Custom sign-out utility that logs out both the Firebase Client SDK
+ * Custom sign-out utility that logs out both the Supabase Client SDK
  * and triggers session cookie deletions on the server.
  */
 export async function signOut({ callbackUrl = "/" }: { callbackUrl?: string } = {}) {
   try {
-    const { signOut: firebaseSignOut } = await import("firebase/auth")
-    await firebaseSignOut(firebaseAuth)
+    await supabase.auth.signOut()
     await fetch("/api/auth/session", { method: "DELETE" })
   } catch (error) {
     console.error("Sign out error:", error)

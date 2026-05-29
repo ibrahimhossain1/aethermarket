@@ -6,6 +6,7 @@ import { useSession } from "@/components/providers"
 import { ShoppingCart, Heart, Download, CreditCard, Sparkles, Check } from "lucide-react"
 import { useCart, CartItem } from "@/lib/store/useCart"
 import { useSaved } from "@/lib/store/useSaved"
+import { useMockPurchases } from "@/lib/store/useMockPurchases"
 
 interface ProductDetailActionsProps {
   product: {
@@ -39,6 +40,13 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
 
   const [loading, setLoading] = React.useState(false)
   const [purchasedFree, setPurchasedFree] = React.useState(product.isPurchased || false)
+
+  React.useEffect(() => {
+    const isMockPurchased = useMockPurchases.getState().purchases.some((p) => p.productId === id)
+    if (isMockPurchased) {
+      setPurchasedFree(true)
+    }
+  }, [id])
 
   const handleCartToggle = () => {
     if (inCart) {
@@ -104,6 +112,32 @@ export default function ProductDetailActions({ product }: ProductDetailActionsPr
 
         const data = await response.json()
         if (response.ok) {
+          // Register mock purchase client-side instantly
+          const mockStore = useMockPurchases.getState()
+          mockStore.addPurchase({
+            id: `mock-purchase-id-${Date.now()}`,
+            buyerId: session.user.id,
+            productId: id,
+            stripePaymentIntentId: null,
+            amount: 0,
+            platformFee: 0,
+            refunded: false,
+            createdAt: new Date().toISOString(),
+            product: {
+              id,
+              title,
+              price: 0,
+              isFree: true,
+              type,
+              slug,
+              previewImages: previewImage ? [previewImage] : [],
+              seller: {
+                id: "mock-seller-id",
+                name: sellerName,
+                image: ""
+              }
+            }
+          })
           setPurchasedFree(true)
         } else {
           alert(data.error || "Failed to process free registration.")

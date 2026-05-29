@@ -8,9 +8,10 @@ interface RefundButtonProps {
   purchaseId: string
   createdAt: Date | string
   refunded: boolean
+  onRefundSuccess?: () => void
 }
 
-export default function RefundButton({ purchaseId, createdAt, refunded }: RefundButtonProps) {
+export default function RefundButton({ purchaseId, createdAt, refunded, onRefundSuccess }: RefundButtonProps) {
   const router = useRouter()
   const [loading, setLoading] = React.useState(false)
   const [isRefunded, setIsRefunded] = React.useState(refunded)
@@ -41,6 +42,7 @@ export default function RefundButton({ purchaseId, createdAt, refunded }: Refund
       const data = await response.json()
       if (response.ok) {
         setIsRefunded(true)
+        if (onRefundSuccess) onRefundSuccess()
         alert("Success! Your refund was successfully processed. Funds have been returned to your card.")
         router.refresh()
       } else {

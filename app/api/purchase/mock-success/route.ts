@@ -151,9 +151,9 @@ export async function GET(request: Request) {
         }
       }
 
-    // Redirect to purchases dashboard with success flag
+    // Redirect to purchases dashboard with success flag and product metadata
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
-    return NextResponse.redirect(`${baseUrl}/dashboard/purchases?success=true&mock=true`)
+    return NextResponse.redirect(`${baseUrl}/dashboard/purchases?success=true&mock=true&productId=${productId}`)
   } catch (error: any) {
     console.error("Error in mock success route:", error)
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 })
